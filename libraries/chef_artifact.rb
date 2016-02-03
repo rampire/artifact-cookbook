@@ -104,11 +104,16 @@ class Chef
           object = get_s3_object(bucket_name, object_name)
 
           Chef::Log.debug("Downloading #{object_name} from S3 bucket #{bucket_name}")
-          ::File.open(destination_file, 'wb') do |file|
-            object.read do |chunk|
-              file.write(chunk)
+          begin
+            ::File.open(destination_file, 'wb') do |file|
+              object.read do |chunk|
+                file.write(chunk)
+              end
+              Chef::Log.debug("File #{destination_file} is #{file.size} bytes on disk")
             end
-            Chef::Log.debug("File #{destination_file} is #{file.size} bytes on disk")
+          rescue
+            Chef::Log.debug("Retrying...")
+            retry
           end
         rescue URI::InvalidURIError
           Chef::Log.warn("Expected an S3 URL but found #{source_file}")
